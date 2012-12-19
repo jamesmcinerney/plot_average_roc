@@ -7,13 +7,15 @@ Created on 18 Dec 2012
 #plots average roc curve for set of roc curves using linear interpolation
 from matplotlib.pyplot import plot, show, figure, xlim, ylim, title, scatter
 from numpy import array,random,arange,zeros
+from random import choice
 
 class Interpolation(object):
     def __init__(self,xs,ys):
         assert len(xs)==len(ys)
 #        assert self._monotonically_increasing(xs)
 #        assert self._monotonically_increasing(ys)
-        self.xs, self.ys = self._sort_xys(xs,ys) #throws error if xs,ys not monotonically increasing
+        xs1, ys1 = self._sort_xys(xs,ys) #throws error if xs,ys not monotonically increasing
+        self.xs, self.ys = self._remove_dups(xs1,ys1) #remove duplicate x values (taking max of corresponding y values)
         self.min_x = self.xs[0]
         self.max_x = self.xs[-1] #get last element in list
     
@@ -30,14 +32,27 @@ class Interpolation(object):
         ys1 = []
         for i in is1: ys1.append(ys[i])
         return xs1,ys1
-        
+
+    def _remove_dups(self,xs,ys):
+        #removes duplicate x values (taking max of corresponding y values)
+        i = 0
+        xs1,ys1 = [], []
+        while i < len(xs):
+            #search forwards for matching x values (could be more than 2)
+            j = 1
+            while (i+j) < len(xs) and xs[i]==xs[i+j]: j+=1
+            y_max = max(ys[i:(i+j)])
+            xs1.append(xs[i])
+            ys1.append(y_max)
+            i+=j
+        return xs1,ys1
+    
     def getY(self,x):
         #get y by direct value or linear interpolation
         assert x >= self.min_x and x <= self.max_x
         #find nearest x value
         i = 0
-        while self.xs[i]<x: #by previous assertion, we know that in worst case self.xs[N-1]==x
-            i+=1
+        while self.xs[i]<x: i+=1 #by previous assertion, we know that in worst case self.xs[N-1]==x
         if self.xs[i]==x:
             #just return direct value:
             return self.ys[i]
@@ -97,14 +112,14 @@ def genRandom(size=3):
         xs = [0.0,1.0]
         xprev = 0.0
         for _ in range(10):
-            xs.append(xprev + random.beta(1,10)*(1.-xprev))
+            xs.append(xprev + choice([0.0,random.beta(1,10)*(1.-xprev)])) #put in some duplicate xs, as may happen from time to time
             xprev = xs[-1]
         xss.append(xs)
     for _ in range(size):
         ys = [0.0,1.0]
         yprev = 0.0
         for _ in range(10):
-            ys.append(yprev + random.beta(1,10)*(1.-yprev))
+            ys.append(yprev + random.beta(1,5)*(1.-yprev))
             yprev = ys[-1]
         yss.append(ys)
     return xss,yss
@@ -113,3 +128,4 @@ def test():
     xss,yss = genRandom()
     plotAve(xss,yss)
     
+test()
